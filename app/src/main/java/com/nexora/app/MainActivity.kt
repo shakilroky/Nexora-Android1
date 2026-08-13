@@ -23,7 +23,7 @@ class MainActivity : Activity() {
     private val green = Color.rgb(18, 184, 134)
     private val white = Color.WHITE
 
-    // XML ফাইল ছাড়াই ডাইনামিক ব্যাকগ্রাউন্ড তৈরি
+    // XML ফাইল ছাড়া ডাইনামিক ব্যাকগ্রাউন্ড তৈরি
     private fun getCardBackground(): GradientDrawable {
         return GradientDrawable().apply {
             setColor(Color.rgb(16, 32, 64))
@@ -195,7 +195,18 @@ class MainActivity : Activity() {
                     val r = NexoraApi.pair(url.text.toString().trim(), code.text.toString().trim(), deviceName, android.os.Build.MODEL)
                     runOnUiThread {
                         if (r.ok && r.deviceSecret.isNotBlank() && r.deviceId.isNotBlank()) {
-                            store.save(SiteConfig(UUID.randomUUID().toString(), url.text.toString().trim(), url.text.toString().trim(), r.siteId, r.deviceId, r.deviceSecret, true, "ALL", ""))
+                            store.save(
+                                SiteConfig(
+                                    id = UUID.randomUUID().toString(),
+                                    name = url.text.toString().trim(),
+                                    baseUrl = url.text.toString().trim().removeSuffix("/"),
+                                    siteId = r.siteId,
+                                    deviceId = r.deviceId,
+                                    deviceSecret = r.deviceSecret,
+                                    gatewayFilter = "ALL",
+                                    senderFilter = ""
+                                )
+                            )
                             refreshSites()
                             Toast.makeText(this, "Nexora pairing successful", Toast.LENGTH_LONG).show()
                         } else Toast.makeText(this, "Pairing failed: ${r.body}", Toast.LENGTH_LONG).show()
