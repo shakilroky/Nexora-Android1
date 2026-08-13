@@ -4,11 +4,12 @@ import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
 import android.widget.*
-import android.graphics.Color
 import com.nexora.android.model.SiteConfig
 import com.nexora.android.network.NexoraApi
 import com.nexora.android.storage.SecureSiteStore
@@ -21,6 +22,15 @@ class MainActivity : Activity() {
     private val navy = Color.rgb(8, 18, 37)
     private val green = Color.rgb(18, 184, 134)
     private val white = Color.WHITE
+
+    // XML ফাইল ছাড়াই ডাইনামিক ব্যাকগ্রাউন্ড তৈরি
+    private fun getCardBackground(): GradientDrawable {
+        return GradientDrawable().apply {
+            setColor(Color.rgb(16, 32, 64))
+            cornerRadius = 24f
+            setStroke(2, Color.rgb(26, 48, 90))
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,35 +56,37 @@ class MainActivity : Activity() {
             text = "NEXORA"
             textSize = 28f
             setTextColor(white)
-        }, LinearLayout.LayoutParams(-1, 55))
+        }, LinearLayout.LayoutParams(-1, -2))
 
         root.addView(TextView(this).apply {
             text = "SMS • VERIFY • AUTOMATE"
             textSize = 12f
             setTextColor(Color.rgb(150, 170, 195))
-        }, LinearLayout.LayoutParams(-1, 35))
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 16 })
 
         root.addView(TextView(this).apply {
             text = "● SMS bridge ready"
             textSize = 15f
             setTextColor(green)
-            setPadding(18, 16, 18, 16)
-            setBackgroundResource(R.drawable.bg_card)
-        }, LinearLayout.LayoutParams(-1, 58).apply { bottomMargin = 18 })
+            setPadding(24, 20, 24, 20)
+            background = getCardBackground()
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 24 })
 
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(TextView(this).apply {
             text = "Connected Websites"
             textSize = 19f
             setTextColor(white)
-        }, LinearLayout.LayoutParams(0, 55, 1f))
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+
         header.addView(Button(this).apply {
             text = "+ ADD"
             setTextColor(white)
             setBackgroundColor(green)
             setOnClickListener { showConnectDialog() }
-        }, LinearLayout.LayoutParams(110, 52))
-        root.addView(header)
+        }, LinearLayout.LayoutParams(-2, -2))
+        
+        root.addView(header, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 16 })
 
         val scroll = ScrollView(this)
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -86,7 +98,7 @@ class MainActivity : Activity() {
             textSize = 12f
             setTextColor(Color.rgb(120, 140, 165))
             gravity = Gravity.CENTER
-        }, LinearLayout.LayoutParams(-1, 45))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 12 })
 
         setContentView(root)
         refreshSites()
@@ -97,13 +109,11 @@ class MainActivity : Activity() {
         val sites = store.all()
         if (sites.isEmpty()) {
             list.addView(TextView(this).apply {
-                text = "
-No websites connected yet.
-
-Tap + ADD to connect a Nexora website."
+                text = "No websites connected yet.\n\nTap + ADD to connect a Nexora website."
                 textSize = 15f
                 setTextColor(Color.rgb(170, 185, 205))
                 setPadding(20, 30, 20, 30)
+                gravity = Gravity.CENTER
             })
             return
         }
@@ -111,8 +121,8 @@ Tap + ADD to connect a Nexora website."
         sites.forEach { site ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(20, 18, 20, 18)
-                setBackgroundResource(R.drawable.bg_card)
+                setPadding(24, 20, 24, 20)
+                background = getCardBackground()
             }
 
             row.addView(TextView(this).apply {
@@ -131,7 +141,7 @@ Tap + ADD to connect a Nexora website."
                 setTextColor(Color.rgb(130, 150, 175))
             })
 
-            val buttons = LinearLayout(this)
+            val buttons = LinearLayout(this).apply { setPadding(0, 16, 0, 0) }
             buttons.addView(Button(this).apply {
                 text = "TEST"
                 setOnClickListener {
@@ -146,7 +156,7 @@ Tap + ADD to connect a Nexora website."
                         }
                     }.start()
                 }
-            }, LinearLayout.LayoutParams(0, 52, 1f))
+            }, LinearLayout.LayoutParams(0, -2, 1f))
 
             buttons.addView(Button(this).apply {
                 text = "REMOVE"
@@ -154,10 +164,10 @@ Tap + ADD to connect a Nexora website."
                     store.delete(site.id)
                     refreshSites()
                 }
-            }, LinearLayout.LayoutParams(0, 52, 1f))
+            }, LinearLayout.LayoutParams(0, -2, 1f))
 
             row.addView(buttons)
-            list.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 14 })
+            list.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 16 })
         }
     }
 
@@ -172,26 +182,26 @@ Tap + ADD to connect a Nexora website."
     }
 
     private fun showPairDialog() {
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20,0,20,0) }
-        fun f(h:String)=EditText(this).apply{hint=h;textSize=15f}
-        val url=f("https://example.com")
-        val code=f("NX-123456")
-        val name=f("Device name (e.g. bKash Phone)")
-        box.addView(url);box.addView(code);box.addView(name)
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20, 0, 20, 0) }
+        fun f(h: String) = EditText(this).apply { hint = h; textSize = 15f }
+        val url = f("https://example.com")
+        val code = f("NX-123456")
+        val name = f("Device name (e.g. bKash Phone)")
+        box.addView(url); box.addView(code); box.addView(name)
         AlertDialog.Builder(this).setTitle("Pair with Nexora").setView(box)
             .setPositiveButton("PAIR") { _, _ ->
-                val deviceName=name.text.toString().trim().ifBlank{"Nexora Android"}
+                val deviceName = name.text.toString().trim().ifBlank { "Nexora Android" }
                 Thread {
-                    val r=NexoraApi.pair(url.text.toString().trim(),code.text.toString().trim(),deviceName,android.os.Build.MODEL)
+                    val r = NexoraApi.pair(url.text.toString().trim(), code.text.toString().trim(), deviceName, android.os.Build.MODEL)
                     runOnUiThread {
-                        if(r.ok && r.deviceSecret.isNotBlank() && r.deviceId.isNotBlank()) {
-                            store.save(SiteConfig(UUID.randomUUID().toString(),url.text.toString().trim(),url.text.toString().trim(),r.siteId,r.deviceId,r.deviceSecret,true,"ALL",""))
+                        if (r.ok && r.deviceSecret.isNotBlank() && r.deviceId.isNotBlank()) {
+                            store.save(SiteConfig(UUID.randomUUID().toString(), url.text.toString().trim(), url.text.toString().trim(), r.siteId, r.deviceId, r.deviceSecret, true, "ALL", ""))
                             refreshSites()
-                            Toast.makeText(this,"Nexora pairing successful",Toast.LENGTH_LONG).show()
-                        } else Toast.makeText(this,"Pairing failed: ${r.body}",Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Nexora pairing successful", Toast.LENGTH_LONG).show()
+                        } else Toast.makeText(this, "Pairing failed: ${r.body}", Toast.LENGTH_LONG).show()
                     }
                 }.start()
-            }.setNegativeButton("CANCEL",null).show()
+            }.setNegativeButton("CANCEL", null).show()
     }
 
     private fun showAddSiteDialog() {
