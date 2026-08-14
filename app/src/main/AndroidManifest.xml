@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.nexora.android">
 
-    <!-- SMS Reading & Internet Permissions for WooCommerce Sync -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
+        android:icon="@drawable/nexoraapp"
+        android:roundIcon="@drawable/nexoraapp"
         android:label="Nexora"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
 
-        <!-- Main Launcher Activity -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.nexora.android.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,9 +23,8 @@
             </intent-filter>
         </activity>
 
-        <!-- Payment SMS Receiver -->
         <receiver
-            android:name=".PaymentSmsReceiver"
+            android:name="com.nexora.android.sms.PaymentSmsReceiver"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter android:priority="999">
