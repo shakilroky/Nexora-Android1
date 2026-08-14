@@ -69,7 +69,7 @@ object NexoraApi {
         return mac.doFinal(body.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
     }
 
-    /** Public connection verification. The Nexora plugin exposes this as GET /android/ping. */
+    /** Initial public verification: GET /android/ping. */
     fun handshake(baseUrl: String): HandshakeResult {
         return try {
             val conn = (endpoint(baseUrl, "/android/ping").openConnection() as HttpURLConnection).apply {
@@ -82,21 +82,14 @@ object NexoraApi {
                 setRequestProperty("Accept", "application/json")
                 setRequestProperty("User-Agent", USER_AGENT)
             }
-
             val responseCode = conn.responseCode
             val text = readResponse(conn)
             conn.disconnect()
 
-            if (responseCode !in 200..299) {
-                return failedHandshake(responseCode, text.ifBlank { "HTTP $responseCode" })
-            }
+            if (responseCode !in 200..299) return failedHandshake(responseCode, text.ifBlank { "HTTP $responseCode" })
 
             val json = org.json.JSONObject(text)
             val endpoints = json.optJSONObject("endpoints")
-
-            // Current Nexora plugin response:
-            // { success:true, site_id, site_name, device_id, device_status, version, ... }
-            // Older plugin builds may return status/handshake/ready, so accept both formats.
             val success = json.optBoolean("success", false)
             val legacyOk = json.optString("status").equals("success", true) &&
                     json.optString("handshake").equals("success", true) &&
@@ -130,24 +123,15 @@ object NexoraApi {
         deviceStatus = "", pairEndpoint = "", syncEndpoint = "", pingEndpoint = "", body = body
     )
 
-    fun pair(
-        baseUrl: String,
-        pairingCode: String,
-        deviceName: String,
-        deviceModel: String,
-        pairEndpointOverride: String = ""
-    ): PairResult {
+    fun pair(baseUrl: String, pairingCode: String, deviceName: String, deviceModel: String, pairEndpointOverride: String = ""): PairResult {
         return try {
-            val url = if (pairEndpointOverride.isNotBlank()) URL(pairEndpointOverride)
-            else endpoint(baseUrl, "/android/pair")
-
+            val url = if (pairEndpointOverride.isNotBlank()) URL(pairEndpointOverride) else endpoint(baseUrl, "/android/pair")
             val cleanCode = pairingCode.trim().uppercase().removePrefix("NX-")
             val body = org.json.JSONObject().apply {
                 put("pairing_code", cleanCode)
                 put("device_name", deviceName)
                 put("device_model", deviceModel)
             }.toString()
-
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 connectTimeout = 15000
@@ -163,21 +147,10 @@ object NexoraApi {
             val responseCode = conn.responseCode
             val text = readResponse(conn)
             conn.disconnect()
-
-            if (responseCode !in 200..299) {
-                return PairResult(false, responseCode, "", "", "", text.ifBlank { "HTTP $responseCode" })
-            }
-
+            if (responseCode !in 200..299) return PairResult(false, responseCode, "", "", "", text.ifBlank { "HTTP $responseCode" })
             val json = org.json.JSONObject(text)
             val data = json.optJSONObject("data") ?: json
-            PairResult(
-                ok = json.optBoolean("success", true),
-                code = responseCode,
-                siteId = data.optString("site_id"),
-                deviceId = data.optString("device_id"),
-                deviceSecret = data.optString("device_secret"),
-                body = text
-            )
+            PairResult(json.optBoolean("success", true), responseCode, data.optString("site_id"), data.optString("device_id"), data.optString("device_secret"), text)
         } catch (e: Exception) {
             PairResult(false, -1, "", "", "", errorText(e))
         }
@@ -198,23 +171,19 @@ object NexoraApi {
             put("amount", payment.amount ?: "")
             put("received_at", payment.receivedAt)
         }.toString()
-
-        return request(
-            site, "/android/sms-sync", body,
-            mapOf(
-                "X-Nexora-Site-ID" to site.siteId,
-                "X-Nexora-Device-ID" to site.deviceId,
-                "X-Nexora-Timestamp" to timestamp.toString(),
-                "X-Nexora-Event-ID" to eventId,
-                "X-Nexora-Signature" to hmac(body, site.deviceSecret)
-            )
-        )
+        return request(site, "/android/sms-sync", body, mapOf(
+            "X-Nexora-Site-ID" to site.siteId,
+            "X-Nexora-Device-ID" to site.deviceId,
+            "X-Nexora-Timestamp" to timestamp.toString(),
+            "X-Nexora-Event-ID" to eventId,
+            "X-Nexora-Signature" to hmac(body, site.deviceSecret)
+        ))
     }
 
-    fun ping(site: SiteConfig): ApiResult = request(
-        site, "/android/ping", "{}",
-        mapOf("X-Nexora-Site-ID" to site.siteId, "X-Nexora-Device-ID" to site.deviceId)
-    )
+    fun ping(site: SiteConfig): ApiResult = request(site, "/android/ping", "{}", mapOf(
+        "X-Nexora-Site-ID" to site.siteId,
+        "X-Nexora-Device-ID" to site.deviceId
+    ))
 
     private fun request(site: SiteConfig, path: String, body: String, extraHeaders: Map<String, String> = emptyMap()): ApiResult {
         return try {
